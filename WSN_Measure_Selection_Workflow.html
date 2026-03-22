@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Measure Selection Workflow</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f4f5f7; color: #1a2332; overflow-x: hidden; }
+
+.top-bar { background: #1a2332; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 12px 28px; }
+.top-bar-title { font-size: 13px; font-weight: 500; opacity: 0.8; }
+.lang-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+.lang-btn { padding: 5px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: rgba(255,255,255,0.6); transition: all 0.2s; font-family: inherit; }
+.lang-btn.active { background: #fff; color: #1a2332; }
+
+.mission-bar { background: linear-gradient(135deg, #0f8a6e, #0d7c64); color: #fff; text-align: center; padding: 16px 28px; }
+.mission-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 3px; }
+.mission-text { font-size: 15px; font-weight: 600; }
+.mission-sub { font-size: 11px; opacity: 0.7; margin-top: 3px; }
+
+.pipeline-header { background: #fff; border-bottom: 1px solid #e2e4e8; padding: 12px 28px; }
+.pipeline-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #0f8a6e; font-weight: 700; background: #e6f7f2; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; }
+.pipeline-flow { font-size: 12px; color: #666; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pipeline-flow span { color: #1a2332; font-weight: 600; }
+
+.scroll-hint { text-align: center; font-size: 11px; color: #aaa; padding: 8px 0 0; }
+.scroll-wrapper { overflow-x: auto; padding: 16px 28px 40px; }
+.scroll-wrapper::-webkit-scrollbar { height: 6px; }
+.scroll-wrapper::-webkit-scrollbar-track { background: #e8e8e8; border-radius: 3px; }
+.scroll-wrapper::-webkit-scrollbar-thumb { background: #0f8a6e; border-radius: 3px; }
+
+.h-track { display: flex; align-items: flex-start; gap: 0; min-width: max-content; }
+
+.step-col { display: flex; flex-direction: column; align-items: center; }
+
+.step-card { border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; transition: all 0.3s; background: #fff; }
+.step-card.collapsed { width: 100px; cursor: pointer; min-height: 340px; display: flex; flex-direction: column; align-items: center; }
+.step-card.collapsed:hover { background: #f7f9fb; }
+.step-card.expanded { width: 360px; min-height: 340px; animation: growIn 0.3s ease; }
+@keyframes growIn { from { opacity: 0.5; width: 100px; } to { opacity: 1; width: 360px; } }
+
+.card-accent { height: 4px; width: 100%; }
+.ca1 { background: #2563eb; } .ca2 { background: #0f8a6e; }
+.ca3 { background: #7c3aed; } .ca4 { background: #dc5a30; } .ca5 { background: #0f8a6e; }
+.ca6 { background: #6b7280; }
+
+.collapsed-inner { display: flex; flex-direction: column; align-items: center; padding: 16px 10px; gap: 10px; flex: 1; }
+.step-num { min-width: 60px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: #fff; flex-shrink: 0; padding: 0 10px; letter-spacing: 0.5px; }
+.sn1 { background: #2563eb; } .sn2 { background: #0f8a6e; }
+.sn3 { background: #7c3aed; } .sn4 { background: #dc5a30; } .sn5 { background: #0f8a6e; }
+.sn6 { background: #6b7280; }
+.collapsed-label { font-size: 12px; font-weight: 600; color: #666; text-align: center; line-height: 1.3; }
+
+.expanded-inner { padding: 18px 20px; }
+.card-phase { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+.cp1 { color: #2563eb; } .cp2 { color: #0f8a6e; } .cp3 { color: #7c3aed; }
+.cp4 { color: #dc5a30; } .cp5 { color: #0f8a6e; } .cp6 { color: #6b7280; }
+.card-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; }
+.card-desc { font-size: 13px; line-height: 1.55; color: #374151; margin-bottom: 10px; }
+
+.sub-section { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #dde0e5; }
+.sub-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; color: #0f8a6e; margin-bottom: 4px; }
+.sub-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.sub-desc { font-size: 13px; line-height: 1.55; color: #374151; }
+
+.detail-box { background: #f8f9fb; border-radius: 6px; padding: 10px 14px; font-size: 11px; line-height: 1.5; color: #555; border-left: 3px solid #d0d4da; margin-top: 8px; }
+.detail-box b { color: #1a2332; }
+.tags-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.tag { padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+.tg-green { background: #d1fae5; color: #065f46; }
+.tg-red { background: #fee2e2; color: #991b1b; }
+.tg-yellow { background: #fef3c7; color: #92400e; }
+.tg-blue { background: #dbeafe; color: #1e40af; }
+.cats-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.cat-pill { padding: 3px 8px; border-radius: 5px; font-size: 9px; font-weight: 600; background: #ede9fe; color: #5b21b6; }
+
+.collapse-top-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #d0d4da; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: 700; color: #999; transition: all 0.2s; margin-left: auto; flex-shrink: 0; }
+.collapse-top-btn:hover { border-color: #dc5a30; color: #dc5a30; }
+.exp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
+.connector-col { display: flex; align-items: center; justify-content: center; min-height: 340px; padding: 0 2px; }
+.conn-wrap { display: flex; flex-direction: row; align-items: center; gap: 0; }
+.conn-h-line { width: 10px; height: 2px; background: #d0d4da; }
+.conn-h-line.active { background: #0f8a6e; }
+.expand-btn { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid #0f8a6e; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; font-weight: 700; color: #0f8a6e; transition: all 0.2s; flex-shrink: 0; }
+.expand-btn:hover { background: #0f8a6e; color: #fff; transform: scale(1.1); }
+.expand-btn.opened { background: #e6f7f2; border-color: #b0e0d0; color: #0f8a6e; font-size: 18px; }
+.expand-btn.opened:hover { background: #0f8a6e; color: #fff; }
+
+.footer-programs { display: flex; gap: 6px; justify-content: center; padding: 14px; flex-wrap: wrap; border-top: 1px solid #eee; }
+.fprog { padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #1a2332; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-title">D3 - Sustainable Pasture and Watershed Management</div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="btn-ru" onclick="setLang('ru')">RU</button>
+  </div>
+</div>
+
+<div class="mission-bar">
+  <div class="mission-label" id="ml"></div>
+  <div class="mission-text" id="mt"></div>
+  <div class="mission-sub" id="ms"></div>
+</div>
+
+<div class="pipeline-header">
+  <div class="pipeline-label" id="pl"></div>
+  <div class="pipeline-flow" id="pf"></div>
+</div>
+
+<div class="scroll-hint" id="sh"></div>
+<div class="scroll-wrapper"><div class="h-track" id="main"></div></div>
+
+<div class="footer-programs" id="footer"></div>
+
+<script>
+let lang = 'en';
+let opened = [true, false, false, false, false, false];
+
+const tx = {
+  ml:{en:'THE MISSION',ru:'МИССИЯ'},
+  mt:{en:'Strengthen climate resilience of smallholder farms and livestock herders in the Kafernighan River Basin',ru:'Укрепление климатической устойчивости мелких фермерских и животноводческих хозяйств в бассейне реки Каферниган'},
+  ms:{en:'8 jamoats, 3 districts, 5 core programmes',ru:'8 джамоатов, 3 района, 5 основных программ'},
+  pl:{en:'MEASURE SELECTION PIPELINE',ru:'ПРОЦЕСС ОТБОРА МЕРОПРИЯТИЙ'},
+  pf:{en:['Identify needs','Consult communities','Score measures','Communities validate','Approved package'],ru:['Определить потребности','Консультации','Оценить мероприятия','Утверждение','Утвержденный пакет']},
+  fp:{en:['CP1 Pasture','CP2 DRR','CP3 Fuelwood','CP4 Rainfed land','CP5 WUA'],ru:['CP1 Пастбища','CP2 DRR','CP3 Топливо','CP4 Богарные земли','CP5 АВП']},
+  sh:{en:'Scroll right to see the full pipeline, or click + to expand steps',ru:'Прокрутите вправо для полного просмотра, или нажмите + для раскрытия шагов'}
+};
+
+const steps = [
+  { id:1, phase:{en:'Evidence phase',ru:'Этап сбора данных'},
+    title:{en:'Step 1: Needs assessment',ru:'Шаг 1: Оценка потребностей'},
+    clabel:{en:'Needs',ru:'Потреб-\nности'},
+    desc:{en:'Identified the needs across 8 jamoats in 3 districts (Varzob, Vahdat, Faizabad) and developed a list of possible measures to address them.',ru:'Определены потребности в 8 джамоатах 3 районов (Варзоб, Вахдат, Файзабад) и разработан перечень возможных мероприятий.'},
+    detail:{en:'551 household surveys, focus group discussions including women-only groups, district profiles, D2 risk mapping',ru:'551 домохозяйство опрошено, фокус-группы включая женские группы, профили районов, картирование рисков D2'},
+    tags:null, cats:null, sub:null },
+  { id:2, phase:{en:'Evidence phase',ru:'Этап сбора данных'},
+    title:{en:'Step 2: Community consultation and longlist selection',ru:'Шаг 2: Консультация с сообществами и формирование перечня'},
+    clabel:{en:'Consult',ru:'Консуль-\nтация'},
+    desc:{en:'Needs assessment results were presented to all 8 jamoat communities in structured meetings. This was the first community touchpoint - Zarzamin facilitated discussions in each jamoat.',ru:'Результаты оценки потребностей представлены сообществам всех 8 джамоатов на структурированных встречах. Первая встреча - Зарзамин провел обсуждения в каждом джамоате.'},
+    detail:{en:'Meetings held July - August 2025 in all 8 jamoats across Varzob, Vahdat, and Faizabad',ru:'Встречи проведены в июле - августе 2025 года во всех 8 джамоатах районов Варзоб, Вахдат и Файзабад'},
+    tags:null, cats:null,
+    sub:{
+      label:{en:'LONGLIST SELECTION',ru:'ФОРМИРОВАНИЕ ПЕРЕЧНЯ'},
+      title:{en:'Communities select candidate measures',ru:'Сообщества выбирают перечень мероприятий'},
+      desc:{en:'From the discussion, communities identified and selected the candidate measures for their jamoat. Each meeting produced a signed protocol documenting the community\'s selections across all 5 programmes.',ru:'В ходе обсуждений сообщества определили и выбрали перечень мероприятий для своего джамоата. По итогам каждой встречи составлен подписанный протокол по всем 5 программам.'},
+      detail:{en:'8 community protocols produced (Annexes C1 - C8) covering pasture, DRR, fuelwood, rainfed land, and WUA',ru:'Составлено 8 протоколов (Приложения C1 - C8) по пастбищам, DRR, топливу, богарным землям и АВП'}
+    }
+  },
+  { id:3, phase:{en:'Technical scoring',ru:'Техническая оценка'},
+    title:{en:'Step 3: MCDMA scoring applied',ru:'Шаг 3: Применение MCDMA-оценки'},
+    clabel:{en:'MCDMA',ru:'MCDMA'},
+    desc:{en:'Each candidate hard measure scored across 25 weighted inputs in 5 categories. Portfolio assembled under budget ceiling ($417K), geographic balance, and programme coverage requirements.',ru:'Каждое мероприятие оценено по 25 взвешенным критериям в 5 категориях. Портфель сформирован с учетом бюджетного потолка ($417K), географического баланса и программного покрытия.'},
+    detail:{en:'Budget + Beneficiaries + EbA (5/0) + 22 criteria = 25 inputs. Weights sum to 25.0. Two totals: weighted (primary) and unweighted (transparency)',ru:'Бюджет + бенефициары + EbA (5/0) + 22 критерия = 25 показателей. Сумма весов = 25.0. Два итога: взвешенный и невзвешенный'},
+    tags:null,
+    cats:{en:['Physical vulnerability (4)','Socio-economic (4)','Environmental (5)','Social-economic (4)','Feasibility (6)'],ru:['Природная уязвимость (4)','Социально-экон. (4)','Экологические (5)','Социально-экон. (4)','Осуществимость (6)']},
+    sub:null },
+  { id:4, phase:{en:'Community validation',ru:'Утверждение сообществами'},
+    title:{en:'Step 4: Second community consultation',ru:'Шаг 4: Повторная консультация'},
+    clabel:{en:'Validate',ru:'Утвер-\nдить'},
+    desc:{en:'Scored package presented back to communities. Final decisions: approve, refuse, modify, or add new measures. Decisions recorded in protocols with reference numbers.',ru:'Оцененный пакет представлен сообществам. Окончательные решения: утвердить, отклонить, изменить или добавить. Решения зафиксированы в протоколах.'},
+    detail:{en:'December 2025 - January 2026. 9 - 16 participants per meeting: jamoat authorities, farmers, WUA/PUU, women, youth',ru:'Декабрь 2025 - январь 2026. 9 - 16 участников: представители джамоатов, фермеры, АВП/СПП, женщины, молодежь'},
+    tags:{en:[{t:'Approved: 164',c:'tg-green'},{t:'Refused: 19',c:'tg-red'},{t:'Modified',c:'tg-yellow'},{t:'Added: 12',c:'tg-blue'}],ru:[{t:'Утверждено: 164',c:'tg-green'},{t:'Отклонено: 19',c:'tg-red'},{t:'Изменено',c:'tg-yellow'},{t:'Добавлено: 12',c:'tg-blue'}]},
+    cats:null, sub:null },
+  { id:5, phase:{en:'Final output',ru:'Итоговый результат'},
+    title:{en:'Step 5: Approving Jamoat Investment Package Results',ru:'Шаг 5: Утверждение результатов инвестиционных пакетов джамоатов'},
+    clabel:{en:'Approved',ru:'Утвержд.'},
+    desc:{en:'The authoritative output. Single source of truth for all budget and measure data. Reflects all community decisions.',ru:'Основной итоговый документ. Единственный источник данных по бюджету и мероприятиям. Отражает все решения сообществ.'},
+    detail:{en:'<b>$417,000</b> | <b>8</b> jamoats | <b>5</b> programmes | <b>164</b> measures | <b>24,412</b> households | <b>57,481</b> EbA beneficiaries',ru:'<b>$417 000</b> | <b>8</b> джамоатов | <b>5</b> программ | <b>164</b> мероприятий | <b>24 412</b> домохозяйств | <b>57 481</b> бенефициаров EbA'},
+    tags:null, cats:null, sub:null },
+  { id:6, phase:{en:'Final output',ru:'Итоговый результат'},
+    title:{en:'Step 6: Supporting annexes',ru:'Шаг 6: Сопроводительные приложения'},
+    clabel:{en:'Annexes',ru:'Прилож.'},
+    desc:{en:'',ru:''},
+    detail:{en:'',ru:''},
+    tags:null, cats:null, sub:null }
+];
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.getElementById('btn-ru').classList.toggle('active', l==='ru');
+  render();
+}
+
+function expandStep(i) {
+  opened[i] = true;
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('card-'+steps[i].id);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+  }, 50);
+}
+
+function collapseStep(i) {
+  if (i === 0) return;
+  opened[i] = false;
+  render();
+}
+
+function render() {
+  document.getElementById('ml').textContent = tx.ml[lang];
+  document.getElementById('mt').textContent = tx.mt[lang];
+  document.getElementById('ms').textContent = tx.ms[lang];
+  document.getElementById('pl').textContent = tx.pl[lang];
+  document.getElementById('sh').textContent = tx.sh[lang];
+
+  let pf = '';
+  tx.pf[lang].forEach((s,i) => { pf += '<span>'+s+'</span>'; if (i<tx.pf[lang].length-1) pf += ' &rarr; '; });
+  document.getElementById('pf').innerHTML = pf;
+
+  let fp = '';
+  tx.fp[lang].forEach(f => { fp += '<span class="fprog">'+f+'</span>'; });
+  document.getElementById('footer').innerHTML = fp;
+
+  let h = '';
+  steps.forEach((s, i) => {
+    const isOpen = opened[i];
+
+    if (isOpen) {
+      h += '<div class="step-col" id="card-'+s.id+'">';
+      h += '<div class="step-card expanded">';
+      h += '<div class="card-accent ca'+s.id+'"></div>';
+      h += '<div class="expanded-inner">';
+      h += '<div class="exp-header">';
+      h += '<div class="step-num sn'+s.id+'">'+(lang==='en'?'STEP ':'ШАГ ')+s.id+'</div>';
+      h += '<div style="flex:1"><div class="card-phase cp'+s.id+'">'+s.phase[lang]+'</div></div>';
+      if (i > 0) h += '<div class="collapse-top-btn" onclick="collapseStep('+i+')">&minus;</div>';
+      h += '</div>';
+      h += '<div class="card-title">'+s.title[lang]+'</div>';
+      h += '<div class="card-desc">'+s.desc[lang]+'</div>';
+
+      if (s.tags && s.tags[lang]) {
+        h += '<div class="tags-row">';
+        s.tags[lang].forEach(t => { h += '<span class="tag '+t.c+'">'+t.t+'</span>'; });
+        h += '</div>';
+      }
+      if (s.cats && s.cats[lang]) {
+        h += '<div class="cats-row">';
+        s.cats[lang].forEach(c => { h += '<span class="cat-pill">'+c+'</span>'; });
+        h += '</div>';
+      }
+      if (s.detail) h += '<div class="detail-box">'+s.detail[lang]+'</div>';
+
+      if (s.sub) {
+        h += '<div class="sub-section">';
+        h += '<div class="sub-label">'+s.sub.label[lang]+'</div>';
+        h += '<div class="sub-title">'+s.sub.title[lang]+'</div>';
+        h += '<div class="sub-desc">'+s.sub.desc[lang]+'</div>';
+        if (s.sub.detail) h += '<div class="detail-box">'+s.sub.detail[lang]+'</div>';
+        h += '</div>';
+      }
+
+      h += '</div></div></div>';
+    } else {
+      h += '<div class="step-col" id="card-'+s.id+'">';
+      h += '<div class="step-card collapsed" onclick="expandStep('+i+')">';
+      h += '<div class="card-accent ca'+s.id+'"></div>';
+      h += '<div class="collapsed-inner">';
+      h += '<div class="step-num sn'+s.id+'">'+(lang==='en'?'STEP ':'ШАГ ')+s.id+'</div>';
+      h += '<div class="collapsed-label">'+s.clabel[lang]+'</div>';
+      h += '</div></div></div>';
+    }
+
+    if (i < steps.length - 1) {
+      const nextOpen = opened[i+1];
+      h += '<div class="connector-col"><div class="conn-wrap">';
+      h += '<div class="conn-h-line'+(nextOpen?' active':'')+'"></div>';
+      if (!nextOpen) {
+        h += '<div class="expand-btn" onclick="expandStep('+(i+1)+')" title="'+(lang==='en'?'Expand':'Открыть')+'">+</div>';
+      } else {
+        h += '<div class="expand-btn opened" onclick="collapseStep('+(i+1)+')">&minus;</div>';
+      }
+      h += '<div class="conn-h-line'+(nextOpen?' active':'')+'"></div>';
+      h += '</div></div>';
+    }
+  });
+
+  document.getElementById('main').innerHTML = h;
+}
+
+setLang('en');
+</script>
+
+<div style="text-align: center; padding: 16px 28px 24px; font-size: 12px; color: #999; border-top: 1px solid #eee; margin-top: 4px;">
+  Developed and designed by: <a href="https://ilkhom-makhkambaev.mystrikingly.com/" target="_blank" rel="noopener" style="color: #0f8a6e; text-decoration: none; font-weight: 600;">Ilkhom Makhkambaev</a>
+</div>
+</body>
+</html>
